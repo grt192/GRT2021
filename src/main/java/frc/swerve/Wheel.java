@@ -15,7 +15,7 @@ import frc.gen.BIGData;
 class Wheel {
 
 	private final double TICKS_PER_ROTATION;
-	private int OFFSET;
+	private double ENCODER_ZERO_OFFSET;
 	private final double DRIVE_TICKS_TO_METERS;
 
 	private static final double TWO_PI = Math.PI * 2;
@@ -38,7 +38,7 @@ class Wheel {
 		driveMotor = new CANSparkMax(BIGData.getInt(name + "_drive"), MotorType.kBrushless);
 		driveEncoder = driveMotor.getEncoder();
 		TICKS_PER_ROTATION = BIGData.getDouble("ticks_per_rotation");
-		OFFSET = BIGData.getInt(name + "_offset");
+		ENCODER_ZERO_OFFSET = BIGData.getInt(name + "_offset");
 		DRIVE_TICKS_TO_METERS = BIGData.getDouble("drive_encoder_scale");
 		configRotateMotor();
 		configDriveMotor();
@@ -50,10 +50,10 @@ class Wheel {
 	}
 
 	/** Zeroes the wheel by updating the offset, and returns the new offset */
-	public int zero() {
+	public double zero() {
 		System.out.println("Zeroing " + name + "module");
-		OFFSET = rotateMotor.getSelectedSensorPosition(0);
-		return OFFSET;
+		ENCODER_ZERO_OFFSET = rotateMotor.getSelectedSensorPosition(0);
+		return ENCODER_ZERO_OFFSET;
 	}
 
 	public void disable() {
@@ -66,7 +66,7 @@ class Wheel {
 			double targetPosition = radians / TWO_PI;
 			targetPosition = GRTUtil.positiveMod(targetPosition, 1.0);
 
-			int encoderPosition = rotateMotor.getSelectedSensorPosition(0) - OFFSET;
+			double encoderPosition = rotateMotor.getSelectedSensorPosition(0) - ENCODER_ZERO_OFFSET;
 			double currentPosition = encoderPosition / TICKS_PER_ROTATION;
 			double rotations = Math.floor(currentPosition);
 			currentPosition -= rotations;
@@ -82,15 +82,15 @@ class Wheel {
 			}
 			targetPosition += rotations;
 			reversed = newReverse;
-			double encoderPos = targetPosition * TICKS_PER_ROTATION + OFFSET;
+			double encoderPos = targetPosition * TICKS_PER_ROTATION + ENCODER_ZERO_OFFSET;
 			rotateMotor.set(ControlMode.Position, encoderPos);
 			speed *= (reversed ? -1 : 1);
 		}
 		driveMotor.set(speed);
 	}
 
-	public int getEncoderPosition() {
-		return rotateMotor.getSelectedSensorPosition(0) - OFFSET;
+	public double getEncoderPosition() {
+		return rotateMotor.getSelectedSensorPosition(0) - ENCODER_ZERO_OFFSET;
 	}
 
 	public double getDriveSpeed() {
@@ -98,8 +98,10 @@ class Wheel {
 	}
 
 	public double getCurrentPosition() {
-		return GRTUtil.positiveMod((((rotateMotor.getSelectedSensorPosition(0) - OFFSET) * TWO_PI / TICKS_PER_ROTATION)
-				+ (reversed ? Math.PI : 0)), TWO_PI);
+		return GRTUtil.positiveMod(
+				(((rotateMotor.getSelectedSensorPosition(0) - ENCODER_ZERO_OFFSET) * TWO_PI / TICKS_PER_ROTATION)
+						+ (reversed ? Math.PI : 0)),
+				TWO_PI);
 	}
 
 	/** return the name of this wheel "fr", "br", "bl", "fl" */
@@ -108,8 +110,8 @@ class Wheel {
 	}
 
 	/** Return the rotationally zero position of the module in encoder ticks */
-	public int getOffset() {
-		return OFFSET;
+	public double getOffset() {
+		return ENCODER_ZERO_OFFSET;
 	}
 
 	/** get the drive motor speed in rotations/second */

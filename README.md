@@ -1,2 +1,2 @@
-# GRT2020
-GRT2020 competition
+# GRT2021
+Gunn Robotics Team 2021 Robot Repository

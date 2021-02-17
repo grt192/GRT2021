@@ -84,7 +84,7 @@ public class ShooterMech implements Mech {
                 System.out.println(rpm);
             }
             int offset = BIGData.getInt("shooter_auto_offset");
-            double newSpeed = rpm + offset;
+            double newSpeed = rpm + offset; // ??
             newSpeed = 5500;
             rpm = BIGData.getDouble("shooter_speed");
             // put current rpm in BIGData so driver can to adjust speed based off that

@@ -324,9 +324,14 @@ public class BIGData {
 		return getBoolean("intake_state");
 	}
 
-	/** Set the state of shooter; false = manual, true = automatic
-	 * @param controller where this command is coming from: controller="mech" means coming from mech controller, 
-	 * controller="swerve" means the control is coming from swerve after centering itself
+	/**
+	 * Set the state of shooter; false = manual, true = automatic
+	 * 
+	 * @param controller
+	 *                       where this command is coming from: controller="mech"
+	 *                       means coming from mech controller, controller="swerve"
+	 *                       means the control is coming from swerve after centering
+	 *                       itself
 	 */
 	public static void putShooterState(boolean state, String controller) {
 		switch (controller) {
@@ -413,15 +418,22 @@ public class BIGData {
 		return getDouble("spinner_manual_speed");
 	}
 
-	/** set whether we should use the manual spinner speed or automatic control 
-	 * @param use true if we should use manual control, false if we should use automatic spinner control
-	*/
+	/**
+	 * set whether we should use the manual spinner speed or automatic control
+	 * 
+	 * @param use
+	 *                true if we should use manual control, false if we should use
+	 *                automatic spinner control
+	 */
 	public static void setUseManualSpinner(boolean use) {
 		put("use_spinner_manual_speed", use);
 	}
 
-	/** get whether we should use manual spinner speed or automatic control
-	 * @return true if we should use manual control, false if we should use automatic spinner control
+	/**
+	 * get whether we should use manual spinner speed or automatic control
+	 * 
+	 * @return true if we should use manual control, false if we should use
+	 *         automatic spinner control
 	 */
 	public static boolean getUseManualSpinner() {
 		return getBoolean("use_spinner_manual_speed");
@@ -468,17 +480,17 @@ public class BIGData {
 	}
 
 	/** put a wheel's zero position. only Swerve should call this function */
-	public static void putWheelZero(String name, int zeroPos) {
+	public static void putWheelZero(String name, double zeroPos) {
 		put(name + "_offset", zeroPos);
 	}
 
 	/** get a wheel's zero position from a name "fr", "br", "bl", "fl". */
-	public static int getWheelZero(String wheelName) {
+	public static double getWheelZero(String wheelName) {
 		return getInt(wheelName + "_offset");
 	}
 
 	/** get a wheel's zero position from a wheel number */
-	public static int getWheelZero(int wheelNum) {
+	public static double getWheelZero(int wheelNum) {
 		return getInt(getWheelName(wheelNum) + "_offset");
 	}
 
