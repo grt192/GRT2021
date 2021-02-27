@@ -7,23 +7,17 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.TimedRobot;
-import frc.config.Config;
-import frc.modes.Mode;
-import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.input.Input;
-import frc.input.JoystickProfile;
-import frc.swerve.NavXGyro;
-import frc.swerve.Swerve;
-import frc.util.GRTUtil;
-
-import edu.wpi.first.cameraserver.*;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.control.Mode;
+import frc.control.input.Input;
+import frc.control.input.JoystickProfile;
+import frc.gen.BIGData;
+import frc.gen.Brain;
+import frc.pathfinding.Target;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -33,141 +27,182 @@ import edu.wpi.first.cameraserver.*;
  * project.
  */
 public class Robot extends TimedRobot {
-  private NetworkTableEntry mode;
-  private Autonomous autonomous;
+    private NetworkTableEntry mode;
+    private Autonomous autonomous;
 
-  public static Swerve SWERVE;
-  public static NavXGyro GYRO;
+    public static BIGData data;
+    public static Brain brain;
+    public static Target target;
 
-  public static double ROBOT_WIDTH;
-  public static double ROBOT_HEIGHT;
-  public static double ROBOT_RADIUS;
+    public static double ROBOT_WIDTH;
+    public static double ROBOT_HEIGHT;
+    public static double ROBOT_RADIUS;
+    private boolean overridden;
 
-  private boolean overridden;
+    /**
+     * This function is run when the robot is first started up and should be used
+     * for any initialization code.
+     */
+    @Override
+    public void robotInit() {
+        BIGData.start();
+        BIGData.put("gyro_ang", 0.0);
+        JoystickProfile.init();
+        ROBOT_HEIGHT = BIGData.getDouble("robot_height");
+        ROBOT_WIDTH = BIGData.getDouble("robot_width");
+        ROBOT_RADIUS = Math.max(ROBOT_WIDTH, ROBOT_HEIGHT) / 2;
 
-  /**
-   * This function is run when the robot is first started up and should be used
-   * for any initialization code.
-   */
-  @Override
-  public void robotInit() {
-    Config.start();
-    JoystickProfile.init();
-    ROBOT_WIDTH = Config.getDouble("robot_width");
-    ROBOT_HEIGHT = Config.getDouble("robot_height");
-    ROBOT_RADIUS = Math.sqrt(ROBOT_WIDTH * ROBOT_WIDTH + ROBOT_HEIGHT * ROBOT_HEIGHT) / 2;
-    autonomous = new Autonomous(this);
-    GYRO = new NavXGyro();
-    SWERVE = new Swerve();
-    Mode.initModes();
-    mode = NetworkTableInstance.getDefault().getTable("Robot").getEntry("mode");
-    mode.setNumber(0);
+        autonomous = new Autonomous(this);
+        Mode.initModes();
+        mode = NetworkTableInstance.getDefault().getTable("Robot").getEntry("mode");
+        mode.setNumber(0);
+        CommandScheduler.getInstance().enable();
 
-    // CameraServer.getInstance().startAutomaticCapture(0);
-    // CameraServer.getInstance().startAutomaticCapture(1);
-
-  }
-
-  private void loop() {
-    autonomous.loop();
-    int i = mode.getNumber(0).intValue();
-    if (manualOverride()) {
-      autonomous.kill();
-      mode.setNumber(0);
-      i = 0;
+        brain = new Brain();
+        target = new Target();
     }
-    if (!Mode.getMode(i).loop()) {
-      autonomous.modeFinished();
-      mode.setNumber(0);
-    }
-  }
 
-  private boolean manualOverride() {
-    double x = JoystickProfile.applyProfile(Input.SWERVE_XBOX.getY(Hand.kLeft));
-    double y = JoystickProfile.applyProfile(-Input.SWERVE_XBOX.getX(Hand.kLeft));
-    boolean temp = !(x == 0 && y == 0);
-    if (temp && !overridden) {
-      overridden = temp;
-      return true;
+    private void loop() {
+        autonomous.loop();
+        int i = mode.getNumber(0).intValue();
+        if (manualOverride()) {
+            autonomous.kill();
+            mode.setNumber(0);
+            i = 0;
+        }
+        if (!Mode.getMode(i).loop()) {
+            autonomous.modeFinished();
+            mode.setNumber(0);
+        }
     }
-    overridden = temp;
-    return false;
-  }
 
-  public void setMode(int i) {
-    mode.setNumber(i);
-  }
+    /**
+     * This function is called periodically during test mode.
+     */
+    @Override
+    public void testPeriodic() {
 
-  /**
-   * This function is called every robot packet, no matter the mode. Use this for
-   * items like diagnostics that you want ran during disabled, autonomous,
-   * teleoperated and test.
-   *
-   * <p>
-   * This runs after the mode specific periodic functions, but before LiveWindow
-   * and SmartDashboard integrated updating.
-   */
-  @Override
-  public void robotPeriodic() {
-  }
+        // TESTING INVOLVING VISION
 
-  /**
-   * This autonomous (along with the chooser code above) shows how to select
-   * between different autonomous modes using the dashboard. The sendable chooser
-   * code works with the Java SmartDashboard. If you prefer the LabVIEW Dashboard,
-   * remove all of the chooser code and uncomment the getString line to get the
-   * auto name from the text box below the Gyro
-   *
-   * <p>
-   * You can add additional auto modes by adding additional comparisons to the
-   * switch structure below with additional strings. If using the SendableChooser
-   * make sure to add them to the chooser code above as well.
-   */
-  @Override
-  public void autonomousInit() {
-  }
+        boolean centeringCamera = false;
+        boolean centeringLidar = false;
+        double cameraAzimuth = BIGData.getDouble("camera_azimuth");
+        double x = Input.SWERVE_XBOX.getX(Hand.kLeft);
+        double y = -Input.SWERVE_XBOX.getY(Hand.kLeft);
+        double lTrigger = Input.SWERVE_XBOX.getTriggerAxis(Hand.kLeft);
+        double rTrigger = Input.SWERVE_XBOX.getTriggerAxis(Hand.kRight);
+        double rotate = JoystickProfile.applyProfile(-(rTrigger * rTrigger - lTrigger * lTrigger));
 
-  /**
-   * This function is called periodically during autonomous.
-   */
-  @Override
-  public void autonomousPeriodic() {
-    loop();
-  }
+        if (Input.SWERVE_XBOX.getAButtonPressed()) {
+            centeringCamera = true;
+            BIGData.setAngle(cameraAzimuth + BIGData.getGyroAngle()); // TODO does not work
+        }
 
-  /**
-   * This function is called periodically during operator control.
-   */
-  @Override
-  public void teleopPeriodic() {
-    Mode.getMode(0).loop();
-  }
+        if (Input.SWERVE_XBOX.getAButtonReleased()) {
+            centeringCamera = false;
+            BIGData.setPIDFalse();
+        }
 
-  /**
-   * This function is called periodically during test mode.
-   */
-  @Override
-  public void testPeriodic() {
-    // zero swerve
-    if (Input.SWERVE_XBOX.getXButtonPressed()) {
-      System.out.println("x button pressed");
-      Config.resetTempConfigFile();
+        // TODO test centering robot to target using camera
+
+        double lidarAzimuth = BIGData.getDouble("lidar_azimuth");
+        double lidarRange = BIGData.getDouble("lidar_range");
+        if (Input.SWERVE_XBOX.getXButtonPressed()) {
+            centeringLidar = true;
+            BIGData.setAngle(-Math.toDegrees(lidarAzimuth) + BIGData.getGyroAngle());
+        }
+
+        if (Input.SWERVE_XBOX.getXButtonReleased()) {
+            centeringLidar = false;
+            BIGData.setPIDFalse();
+        }
+
+        // TODO: test azimuth angle thresholds
+        if ((centeringLidar || centeringCamera) && (lidarAzimuth < 2 || cameraAzimuth < 2)) {
+            BIGData.putShooterState(true, "swerve");
+        } else {
+            BIGData.putShooterState(false, "swerve");
+        }
+
+        BIGData.requestDrive(x, y, rotate);
     }
-    if (Input.SWERVE_XBOX.getYButtonReleased()) {
-      System.out.println("y button released");
-      SWERVE.zeroRotate();
+
+    @Override
+    public void disabledInit() {
+        BIGData.requestDrive(0, 0, 0);
+        BIGData.setPIDFalse();
     }
-    if (Input.SWERVE_XBOX.getAButtonPressed()) {
-      Config.changeStartupConfigFile(true);
+
+    public void setMode(int i) {
+        mode.setNumber(i);
     }
-    if (Input.SWERVE_XBOX.getBButtonPressed()) {
-      Config.changeStartupConfigFile(false);
+
+    /**
+     * This function is called every robot packet, no matter the mode. Use this for
+     * items like diagnostics that you want ran during disabled, autonomous,
+     * teleoperated and test.
+     *
+     * <p>
+     * This runs after the mode specific periodic functions, but before LiveWindow
+     * and SmartDashboard integrated updating.
+     */
+    @Override
+    public void robotPeriodic() {
+        CommandScheduler.getInstance().run();
+
     }
-    if (Input.SWERVE_XBOX.getBumperReleased(Hand.kLeft)) {
-      Config.printConfigMappings();
+
+    private boolean manualOverride() {
+        double x = JoystickProfile.applyProfile(Input.SWERVE_XBOX.getY(Hand.kLeft));
+        double y = JoystickProfile.applyProfile(-Input.SWERVE_XBOX.getX(Hand.kLeft));
+        boolean temp = !(x == 0 && y == 0);
+        if (temp && !overridden) {
+            overridden = temp;
+            return true;
+        }
+        overridden = temp;
+        return false;
     }
-    if (Input.SWERVE_XBOX.getBumperReleased(Hand.kRight)) {
-      JoystickProfile.updateProfilingPoints();
+
+    /**
+     * This autonomous (along with the chooser code above) shows how to select
+     * between different autonomous modes using the dashboard. The sendable chooser
+     * code works with the Java SmartDashboard. If you prefer the LabVIEW Dashboard,
+     * remove all of the chooser code and uncomment the getString line to get the
+     * auto name from the text box below the Gyro
+     *
+     * <p>
+     * You can add additional auto modes by adding additional comparisons to the
+     * switch structure below with additional strings. If using the SendableChooser
+     * make sure to add them to the chooser code above as well.
+     */
+    @Override
+    public void autonomousInit() {
+        BIGData.putZeroGyroRequest(true);
+        BIGData.put("in_teleop", false);
+        BIGData.put("auton_started", true);
+        autonomous.init("bezier1.txt");
     }
-  }
+
+    /**
+     * This function is called periodically during autonomous.
+     */
+    @Override
+    public void autonomousPeriodic() {
+        loop();
+    }
+
+    @Override
+    public void teleopInit() {
+        BIGData.put("in_teleop", true);
+    }
+
+    /**
+     * This function is called periodically during operator control.
+     */
+    @Override
+    public void teleopPeriodic() {
+        Mode.getMode(0).loop();
+    }
+
 }
