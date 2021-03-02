@@ -1,9 +1,8 @@
 package frc.positiontracking;
 
-import frc.pathfinding.fieldmap.geometry.*;
+import frc.pathfinding.fieldmap.geometry.Vector;
 
 public class Position {
-
     private final Vector pos;
     private final double angle;
 

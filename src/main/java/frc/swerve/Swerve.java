@@ -9,7 +9,6 @@ import frc.gen.BIGData;
 import frc.util.GRTUtil;
 
 public class Swerve {
-
 	private final double SWERVE_WIDTH;
 	private final double SWERVE_HEIGHT;
 	private final double RADIUS;
@@ -33,6 +32,7 @@ public class Swerve {
 
 	public Swerve() {
 		this.gyro = new NavXGyro();
+
 		gyro.reset();
 		angle = 0.0;
 		robotCentric = false;
@@ -49,22 +49,26 @@ public class Swerve {
 		kP = BIGData.getDouble("swerve_kp");
 		kD = BIGData.getDouble("swerve_kd");
 		kF = BIGData.getDouble("swerve_kf");
+
 		RADIUS = Math.sqrt(SWERVE_WIDTH * SWERVE_WIDTH + SWERVE_HEIGHT * SWERVE_HEIGHT) / 2;
 		WHEEL_ANGLE = Math.atan2(SWERVE_WIDTH, SWERVE_HEIGHT);
 		ROTATE_SCALE = 1 / RADIUS;
+
+		refreshVals(); // mainly to set gyro angle in bigdata
 		calcSwerveData();
 		// TODO: test swerve PID
 		setAngle(0.0);
 	}
 
 	public void update() {
-
 		refreshVals();
+
 		double w = userW;
 		if (withPID) {
 			w = calcPID();
 		}
 		changeMotors(userVX, userVY, w);
+
 		calcSwerveData();
 	}
 

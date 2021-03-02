@@ -105,6 +105,7 @@ class Config {
 					map.put(splitted[0].trim(), splitted[1].trim());
 			}
 		}
+
 		in.close();
 	}
 
