@@ -100,6 +100,7 @@ public class Swerve {
 		for (int i = 0; i < wheels.length; i++) {
 			BIGData.putWheelRawDriveSpeed(wheels[i].getName(), wheels[i].getRawDriveSpeed());
 			BIGData.putWheelRawRotateSpeed(wheels[i].getName(), wheels[i].getRawRotateSpeed());
+			BIGData.putWheelPosition(wheels[i].getName(), wheels[i].getCurrentPosition());
 			if (BIGData.getZeroIndivSwerveRequest(i)) {
 				zeroRotateIndiv(i);
 				zeroesUpdated = true;
@@ -127,8 +128,7 @@ public class Swerve {
 	/**
 	 * sets the angle of the robot
 	 * 
-	 * @param angle
-	 *                  the angle to turn the robot to, in radians
+	 * @param angle the angle to turn the robot to, in radians
 	 */
 	private void setAngle(double angle) {
 		withPID = true;
@@ -143,12 +143,9 @@ public class Swerve {
 	/**
 	 * change the motors to reach the requested values
 	 * 
-	 * @param vx
-	 *               the requested x velocity from -1.0 to 1.0
-	 * @param vy
-	 *               the requested y velocity from -1.0 to 1.0
-	 * @param w
-	 *               the requested angular velocity
+	 * @param vx the requested x velocity from -1.0 to 1.0
+	 * @param vy the requested y velocity from -1.0 to 1.0
+	 * @param w  the requested angular velocity
 	 */
 	private void changeMotors(double vx, double vy, double w) {
 		w *= ROTATE_SCALE;
