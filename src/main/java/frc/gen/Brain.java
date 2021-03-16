@@ -31,7 +31,7 @@ public class Brain implements Runnable {
         // pdp = new PowerDistributionPanel(0);
         shuffleboardCommands = new ShuffleboardCommands();
         // lidar = new Lidar();
-        // camera = new JetsonCamera();
+        camera = new JetsonCamera();
         // fieldGUI = new FieldGUI("10.1.92.151", 5000);
 
         // TODO Fix this
@@ -46,6 +46,7 @@ public class Brain implements Runnable {
         tracking.update();
         mechs.update();
         shuffleboardCommands.update();
+        camera.update();
         // fieldGUI.update();
 
         // brownout prevention

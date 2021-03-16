@@ -181,6 +181,8 @@ public class Robot extends TimedRobot {
         BIGData.putZeroGyroRequest(true);
         BIGData.put("in_teleop", false);
         BIGData.put("auton_started", true);
+        //do we need this???
+        BIGData.putJetsonCameraConnected(true);
         autonomous.init("bezier1.txt");
     }
 

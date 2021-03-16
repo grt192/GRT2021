@@ -595,14 +595,21 @@ public class BIGData {
 	 * @param a
 	 *              the azimuth (in degrees, where positive means camera is pointed
 	 *              to the left)
+	 * @param ax
+	 * 				x angle to target
+	 * @param ay
+	 * 				y angle to target
 	 * @param x
-	 *              TODO TELL ME WHAT THIS IS!
+	 *              x relative to camera
 	 * @param y
-	 *              TODO TELL ME WHAT THIS IS!!!!!!!!!!!!!!
+	 *              y relative to camera
 	 */
-	public static void updateCamera(double r, double a, double x, double y) {
-		put("camera_azimuth", a);
-		put("camera_range", r);
+	public static void updateCamera(double ax,  double ay, double dist) {
+		put("camera_ax", ax);
+		put("camera_ay", ay);
+		put("camera_range", dist);
+
+		// figure out what to put here!!
 		put("relative_x", x);
 		put("relative_y", y);
 	}
