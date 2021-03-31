@@ -603,8 +603,10 @@ public class BIGData {
 	 *              x relative to camera
 	 * @param y
 	 *              y relative to camera
+	 * @param ballPresent
+	 * 				if camera sees a ball in frame
 	 */
-	public static void updateCamera(double ax,  double ay, double dist) {
+	public static void updateCamera(double ax,  double ay, double dist, boolean ballPresent) {
 		put("camera_ax", ax);
 		put("camera_ay", ay);
 		put("camera_range", dist);
@@ -612,6 +614,7 @@ public class BIGData {
 		// figure out what to put here!!
 		put("relative_x", x);
 		put("relative_y", y);
+		put("ballPresent", ballPresent);
 	}
 
 	/** TODO COMMENT CODE PLS! */
